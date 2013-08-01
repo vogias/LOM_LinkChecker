@@ -283,7 +283,7 @@ public class ODS_linkchecker {
                             }
                         }
                     }
-                    recordsNumber=i;
+                    recordsNumber=i+1;
                 }
                 try{
                     if(conn!=null)
