@@ -237,7 +237,8 @@ public class ODS_linkchecker {
 
                             //-------------------------Move files ----------------------------------
                             // File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
-                            File newFile =new File(brokenFolder.toPath().toString().concat(listOfFiles[i].getName()));
+                            File newFile =new File(brokenFolder.getPath(),listOfFiles[i].getName());
+
                             Files.move(listOfFiles[i].toPath(), newFile.toPath());
                             System.out.println("File=" +listOfFiles[i].toPath()+ " was moved to" +brokenFolder);
                             //----------------------------------------------------------------------
@@ -263,7 +264,7 @@ public class ODS_linkchecker {
                                 System.out.println("File Distination=" +brokenFolder.toPath());
 
                                 //File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
-                                File newFile =new File(brokenFolder.toPath().toString().concat(listOfFiles[i].getName()));
+                                File newFile =new File(brokenFolder.getPath(),listOfFiles[i].getName());
                                 Files.move(listOfFiles[i].toPath(),newFile.toPath());
                                 System.out.println("File=" +listOfFiles[i].toPath()+ " was moved to"+brokenFolder);
                                 //----------------------------------------------------------------------
