@@ -236,7 +236,8 @@ public class ODS_linkchecker {
                             notWellFormed+=1;
 
                             //-------------------------Move files ----------------------------------
-                            File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
+                            // File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
+                            File newFile =new File(brokenFolder.toPath().toString().concat(listOfFiles[i].getName()));
                             Files.move(listOfFiles[i].toPath(), newFile.toPath());
                             System.out.println("File=" +listOfFiles[i].toPath()+ " was moved to" +brokenFolder);
                             //----------------------------------------------------------------------
@@ -261,7 +262,8 @@ public class ODS_linkchecker {
                                 System.out.println("File source=" +listOfFiles[i].toPath());
                                 System.out.println("File Distination=" +brokenFolder.toPath());
 
-                                File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
+                                //File newFile =new File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
+                                File newFile =new File(brokenFolder.toPath().toString().concat(listOfFiles[i].getName()));
                                 Files.move(listOfFiles[i].toPath(),newFile.toPath());
                                 System.out.println("File=" +listOfFiles[i].toPath()+ " was moved to"+brokenFolder);
                                 //----------------------------------------------------------------------
