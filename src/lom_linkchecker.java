@@ -334,7 +334,7 @@ public class lom_linkchecker {
 			System.out
 					.println(" ------------------------------------------------------------");
 
-			slf4jLogger.info(folder + " " + recordsNumber + " " + deadLinks
+			slf4jLogger.info(folder.getName() + " " + recordsNumber + " " + deadLinks
 					+ " " + notWellFormed);
 		} catch (Exception NotFolder) {
 			System.out.println("Un-expected Error ");
