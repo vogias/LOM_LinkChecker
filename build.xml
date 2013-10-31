@@ -4,7 +4,7 @@
 	<!ENTITY buildProps SYSTEM "./build.properties">
 ]>
 
-<project name="FSValidator" default="build" basedir=".">
+<project name="LinkChecker" default="build" basedir=".">
 	
 	&buildProps;
 	
@@ -60,8 +60,8 @@
 	<target name="package" depends="build">
 		<jar destfile="${dist.dir}/${appname}.jar" basedir="${build.dir}">
 			<manifest>
-				<attribute name="Main-Class" value="grnet.validation.XMLValidation" />
-				<attribute name="Class-Path" value="./lib/commons-io-2.4.jar ./lib/logback-classic-1.0.13.jar ./lib/logback-core-1.0.13.jar ./lib/slf4j-api-1.7.5.jar" />
+				<attribute name="Main-Class" value="lom_linkchecker" />
+				<attribute name="Class-Path" value="./lib/logback-classic-1.0.13.jar ./lib/logback-core-1.0.13.jar ./lib/slf4j-api-1.7.5.jar ./lib/mysql-connector-java-3.1.14-bin.jar" />
 			</manifest>
 		</jar>
 		<copy file="configure.properties" todir="${dist.dir}" />
