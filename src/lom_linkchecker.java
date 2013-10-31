@@ -22,7 +22,7 @@ import java.sql.Statement;
  * Time: 11:02 AM
  * To change this template use File | Settings | File Templates.
  */
-public class ODS_linkchecker {
+public class lom_linkchecker {
 
     // ------------     Get Connection from MySQL       --------------------------
     public static Connection Get_Connection(String databaseName,String userName,String passWord) throws Exception
@@ -305,7 +305,7 @@ public class ODS_linkchecker {
 
 
     public static void main(String args[]) {
-        ODS_linkchecker ods_linkchecker=new ODS_linkchecker();
+        lom_linkchecker ods_linkchecker=new lom_linkchecker();
         File metadataFolder = new File(args[0]);
         String username = args[1];
         String password = args[2];
