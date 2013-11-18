@@ -26,7 +26,7 @@
 		</triggeringPolicy> -->
 
 		<encoder>
-			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36}  %msg%n
+			<pattern>%d{YYYY-MM-dd.HH:mm:ss.SSS} [%thread] %-5level %logger{36}  %msg%n
 			</pattern>
 		</encoder>
 
