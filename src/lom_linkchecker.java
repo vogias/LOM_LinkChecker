@@ -190,6 +190,7 @@ public class lom_linkchecker {
 	void checkLink(File folder, String dbName, String tbName, String userName,
 			String passWord, File brokenFolder) {
 		File[] listOfFiles;
+
 		int fileNumber = 0, deadLinks = 0, liveLinks = 0, notWellFormed = 0;
 		String fileName = null;
 		Connection conn = null;
@@ -225,9 +226,20 @@ public class lom_linkchecker {
 			}
 
 			System.out.println("processing " + fileNumber + " files ...");
+			String provider = folder.getName();
 			for (int i = 0; i < fileNumber; i++) {
+
+				StringBuffer logString = new StringBuffer();
+
+				logString.append(provider);
+
 				System.out.println("processing " + (i + 1) + "th file ...");
 				fileName = listOfFiles[i].getPath().toString();
+				String name = listOfFiles[i].getName();
+				name = name.substring(0, name.indexOf(".xml"));
+
+				logString.append(" "+name);
+
 				System.out.println("checking FileName= " + fileName);
 				String metadataURL = (GetURLFromXML(fileName, "technical",
 						"location").toString()).replace("'", "\\'");
@@ -244,9 +256,13 @@ public class lom_linkchecker {
 								+ ")-----------------------------");
 						insertRecord(metadataURL, "NotWellFormed", fileName,
 								conn, tbName);
+
+						logString.append(" " + "NotWellFormed");
+
 						System.out.println("--------------------File #(" + i
 								+ ")-----------------------------");
 						System.out.println("No metadata element found!");
+
 						notWellFormed += 1;
 
 						// -------------------------Move files
@@ -295,6 +311,7 @@ public class lom_linkchecker {
 							System.out.println("File="
 									+ listOfFiles[i].toPath() + " was moved to"
 									+ brokenFolder);
+							logString.append(" " + "DeadLink");
 							// ----------------------------------------------------------------------
 
 						} catch (Exception e) {
@@ -310,6 +327,7 @@ public class lom_linkchecker {
 							System.out
 									.println("--------------------------------------------------------");
 							liveLinks += 1;
+							logString.append(" " + "Livelink");
 						} catch (Exception e) {
 							System.out
 									.println("Error in inserting record  in result=200 section");
@@ -317,6 +335,8 @@ public class lom_linkchecker {
 					}
 				}
 				recordsNumber = i + 1;
+
+				slf4jLogger.info(logString.toString());
 			}
 			try {
 				if (conn != null)
@@ -334,8 +354,6 @@ public class lom_linkchecker {
 			System.out
 					.println(" ------------------------------------------------------------");
 
-			slf4jLogger.info(folder.getName() + " " + recordsNumber + " " + deadLinks
-					+ " " + notWellFormed);
 		} catch (Exception NotFolder) {
 			System.out.println("Un-expected Error ");
 			// throw NotFolder;
