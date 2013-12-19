@@ -393,7 +393,7 @@ public class lom_linkchecker {
 
 			System.out
 					.println(" --------------------Finsished! -----------------------------");
-			System.out.println("Duration:" + diff + "ms");
+			System.out.println(" Duration:" + diff + "ms");
 			System.out.println(" Total number of checked records="
 					+ getRecordsNumber());
 			System.out.println(" Number of broken links=" + getDeadLinks());
