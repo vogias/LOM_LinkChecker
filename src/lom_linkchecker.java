@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +43,7 @@ public class lom_linkchecker {
 	private static Connection Get_Connection(String databaseName,
 			String userName, String passWord) throws Exception {
 		try {
+
 			System.out.println("Connecting to a selected database...");
 			// Name of database
 			String connectionURL = "jdbc:mysql://localhost:3306/"
