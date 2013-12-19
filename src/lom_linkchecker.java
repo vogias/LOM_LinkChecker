@@ -1,12 +1,18 @@
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,9 +33,13 @@ public class lom_linkchecker {
 
 	private static final Logger slf4jLogger = LoggerFactory
 			.getLogger(lom_linkchecker.class);
+	private int deadLinks = 0;
+	private int notWellFormed = 0;
+	private int liveLinks = 0;
+	private int recordsNumber = 0;
 
 	// ------------ Get Connection from MySQL --------------------------
-	public static Connection Get_Connection(String databaseName,
+	private static Connection Get_Connection(String databaseName,
 			String userName, String passWord) throws Exception {
 		try {
 			System.out.println("Connecting to a selected database...");
@@ -58,12 +68,12 @@ public class lom_linkchecker {
 	}
 
 	// ------------ Check availability of each URL --------------------------
-	private static int URLChecker(String link) {
+	public int URLChecker(String link) {
 
 		HttpURLConnection urlconn = null;
 
-		int res = -1;
-		String msg = null;
+		// int res = -1;
+		// String msg = null;
 		try {
 
 			URL url = new URL(link);
@@ -166,8 +176,8 @@ public class lom_linkchecker {
 
 	// ------------ INSERT RECORD INTO LOG TABLE (URL, Dead or Live?, the
 	// filename, connection name) --------------------------
-	public void insertRecord(String URL, String Result, String FileName,
-			Connection conn, String tbName) {
+	public synchronized void insertRecord(String URL, String Result,
+			String FileName, Connection conn, String tbName) {
 		Statement stmt = null;
 		FileName = FileName.replace('\\', '/');
 		try {
@@ -187,14 +197,58 @@ public class lom_linkchecker {
 		}// end try
 	}
 
+	public synchronized void raiseNotWellFormed() {
+		notWellFormed++;
+	}
+
+	public synchronized void raiseLiveLinks() {
+		liveLinks++;
+	}
+
+	public synchronized void raiseDeadLinks() {
+		deadLinks++;
+	}
+
+	public int getNotWellFormed() {
+		return notWellFormed;
+	}
+
+	public int getDeadLinks() {
+		return deadLinks;
+	}
+
+	public int getLiveLinks() {
+		return liveLinks;
+	}
+
 	void checkLink(File folder, String dbName, String tbName, String userName,
 			String passWord, File brokenFolder) {
 		File[] listOfFiles;
 
-		int fileNumber = 0, deadLinks = 0, liveLinks = 0, notWellFormed = 0;
-		String fileName = null;
+		int fileNumber = 0;
+
 		Connection conn = null;
-		int recordsNumber = 0;
+
+		Properties props = new Properties();
+		int threadPoolSize = 1;
+
+		try {
+			props.load(new FileInputStream("configure.properties"));
+			threadPoolSize = Integer.parseInt(props
+					.getProperty(Constants.threadPoolSize));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			System.exit(-1);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			System.exit(-1);
+		} catch (ClassCastException e) {
+			// TODO: handle exception
+			System.err.println("Wrong thread pool size value...");
+			System.exit(-1);
+		}
 
 		try {
 			conn = Get_Connection(dbName, userName, passWord);
@@ -227,117 +281,28 @@ public class lom_linkchecker {
 
 			System.out.println("processing " + fileNumber + " files ...");
 			String provider = folder.getName();
+
+			int availableProcessors = Runtime.getRuntime()
+					.availableProcessors();
+			System.out.println("Available cores:" + availableProcessors);
+			System.out.println("Thread Pool size:" + threadPoolSize);
+			ExecutorService executor = Executors
+					.newFixedThreadPool(threadPoolSize);
+
+			long start = System.currentTimeMillis();
 			for (int i = 0; i < fileNumber; i++) {
 
-				StringBuffer logString = new StringBuffer();
+				WorkerDB worker = new WorkerDB(provider, listOfFiles[i], this,
+						conn, tbName, brokenFolder, slf4jLogger);
+				executor.execute(worker);
 
-				logString.append(provider);
-
-				System.out.println("processing " + (i + 1) + "th file ...");
-				fileName = listOfFiles[i].getPath().toString();
-				String name = listOfFiles[i].getName();
-				name = name.substring(0, name.indexOf(".xml"));
-
-				logString.append(" "+name);
-
-				System.out.println("checking FileName= " + fileName);
-				String metadataURL = (GetURLFromXML(fileName, "technical",
-						"location").toString()).replace("'", "\\'");
-				if (metadataURL.equals("Error"))
-					metadataURL = (GetURLFromXML(fileName, "lom:technical",
-							"lom:location").toString());
-				if (metadataURL.equals("Error"))
-					metadataURL = (GetURLFromXML(fileName, "oai_dc:dc",
-							"dc:identifier").toString());
-
-				if (metadataURL.equals("Error")) {
-					try {
-						System.out.println("--------------------File #(" + i
-								+ ")-----------------------------");
-						insertRecord(metadataURL, "NotWellFormed", fileName,
-								conn, tbName);
-
-						logString.append(" " + "NotWellFormed");
-
-						System.out.println("--------------------File #(" + i
-								+ ")-----------------------------");
-						System.out.println("No metadata element found!");
-
-						notWellFormed += 1;
-
-						// -------------------------Move files
-						// ----------------------------------
-						// File newFile =new
-						// File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
-						File newFile = new File(brokenFolder.getPath(),
-								listOfFiles[i].getName());
-
-						Files.move(listOfFiles[i].toPath(), newFile.toPath());
-						System.out.println("File=" + listOfFiles[i].toPath()
-								+ " was moved to" + brokenFolder);
-						// ----------------------------------------------------------------------
-					} catch (Exception e) {
-						System.out
-								.println("Error in moving file in NotWellFormed section");
-						System.exit(2);
-					}
-				} else {
-					System.out.println("Found URL=" + metadataURL);
-
-					int result = URLChecker(metadataURL);
-					if (result != 200) {
-						try {
-							System.out.println("--------------------File #("
-									+ i + ")-----------------------------");
-							insertRecord(metadataURL, Integer.toString(result),
-									fileName, conn, tbName);
-							System.out
-									.println("----------------------------------------------------");
-							deadLinks += 1;
-
-							// -------------------------Move files
-							// ----------------------------------
-							System.out.println("File source="
-									+ listOfFiles[i].toPath());
-							System.out.println("File Distination="
-									+ brokenFolder.toPath());
-
-							// File newFile =new
-							// File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
-							File newFile = new File(brokenFolder.getPath(),
-									listOfFiles[i].getName());
-							Files.move(listOfFiles[i].toPath(),
-									newFile.toPath());
-							System.out.println("File="
-									+ listOfFiles[i].toPath() + " was moved to"
-									+ brokenFolder);
-							logString.append(" " + "DeadLink");
-							// ----------------------------------------------------------------------
-
-						} catch (Exception e) {
-							System.out
-									.println("Error in moving file in result<>200 section");
-						}
-					} else {
-						try {
-							System.out.println("--------------------File #("
-									+ i + ")-----------------------------");
-							insertRecord(metadataURL, Integer.toString(result),
-									fileName, conn, tbName);
-							System.out
-									.println("--------------------------------------------------------");
-							liveLinks += 1;
-							logString.append(" " + "Livelink");
-						} catch (Exception e) {
-							System.out
-									.println("Error in inserting record  in result=200 section");
-						}
-					}
-				}
-				recordsNumber = i + 1;
-
-				slf4jLogger.info(logString.toString());
 			}
+			executor.shutdown();
+
+			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			long end = System.currentTimeMillis();
+			long diff = end - start;
+			System.out.println("Duration:" + diff + "ms");
 			try {
 				if (conn != null)
 					conn.close();
@@ -348,9 +313,10 @@ public class lom_linkchecker {
 			System.out
 					.println(" --------------------Finsished! -----------------------------");
 			System.out.println(" Total number of checked records="
-					+ recordsNumber);
-			System.out.println(" Number of broken links=" + deadLinks);
-			System.out.println(" Number of not well-formed=" + notWellFormed);
+					+ getRecordsNumber());
+			System.out.println(" Number of broken links=" + getDeadLinks());
+			System.out.println(" Number of not well-formed="
+					+ getNotWellFormed());
 			System.out
 					.println(" ------------------------------------------------------------");
 
@@ -360,28 +326,150 @@ public class lom_linkchecker {
 		}
 	}
 
+	void checkLink(File folder, File brokenFolder) {
+		File[] listOfFiles;
+
+		int fileNumber = 0;
+
+		Properties props = new Properties();
+		int threadPoolSize = 1;
+
+		try {
+			props.load(new FileInputStream("configure.properties"));
+			threadPoolSize = Integer.parseInt(props
+					.getProperty(Constants.threadPoolSize));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			System.exit(-1);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			System.exit(-1);
+		} catch (NumberFormatException e) {
+			// TODO: handle exception
+			System.err.println("Wrong thread pool size value...");
+			System.exit(-1);
+		}
+
+		FilenameFilter filter = new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.endsWith(".xml") || name.endsWith(".XML");
+			}
+		};
+
+		try {
+			listOfFiles = folder.listFiles(filter);
+			fileNumber = listOfFiles.length;
+			if (fileNumber == 0) {
+				System.out.println("No XML files found in the selected folder");
+
+				System.exit(1);
+			}
+
+			System.out.println("processing " + fileNumber + " files ...");
+			String provider = folder.getName();
+
+			int availableProcessors = Runtime.getRuntime()
+					.availableProcessors();
+			System.out.println("Available cores:" + availableProcessors);
+			System.out.println("Thread Pool size:" + threadPoolSize);
+			ExecutorService executor = Executors
+					.newFixedThreadPool(threadPoolSize);
+
+			long start = System.currentTimeMillis();
+			for (int i = 0; i < fileNumber; i++) {
+
+				WorkerFS worker = new WorkerFS(provider, listOfFiles[i], this,
+						brokenFolder, slf4jLogger);
+				executor.execute(worker);
+
+			}
+			executor.shutdown();
+
+			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			long end = System.currentTimeMillis();
+			long diff = end - start;
+
+			System.out
+					.println(" --------------------Finsished! -----------------------------");
+			System.out.println("Duration:" + diff + "ms");
+			System.out.println(" Total number of checked records="
+					+ getRecordsNumber());
+			System.out.println(" Number of broken links=" + getDeadLinks());
+			System.out.println(" Number of not well-formed="
+					+ getNotWellFormed());
+			System.out
+					.println(" ------------------------------------------------------------");
+
+		} catch (Exception NotFolder) {
+			System.out.println("Un-expected Error ");
+			// throw NotFolder;
+		}
+	}
+
+	public synchronized void raiseRecordsNumber() {
+		recordsNumber++;
+	}
+
+	public int getRecordsNumber() {
+		return recordsNumber;
+	}
+
 	public static void main(String args[]) {
 		lom_linkchecker ods_linkchecker = new lom_linkchecker();
-		File metadataFolder = new File(args[0]);
-		String username = args[1];
-		String password = args[2];
-		File brokenFolder = new File(args[3]);
 
-		if (!metadataFolder.exists()) {
-			System.out.println("-------------------------------------");
-			System.out.println("Error! the folder does not exist-->"
-					+ metadataFolder.getAbsolutePath());
-			System.out.println("-------------------------------------");
-			System.exit(1);
+		File metadataFolder;
+		String username;
+		String password;
+		File brokenFolder;
+
+		if (args.length == 4) {
+			metadataFolder = new File(args[0]);
+			username = args[1];
+			password = args[2];
+			brokenFolder = new File(args[3]);
+			if (!metadataFolder.exists()) {
+				System.out.println("-------------------------------------");
+				System.out.println("Error! the folder does not exist-->"
+						+ metadataFolder.getAbsolutePath());
+				System.out.println("-------------------------------------");
+				System.exit(1);
+			}
+			if (!brokenFolder.exists()) {
+				System.out.println("-------------------------------------");
+				System.out.println("Error! the folder does not exist--->"
+						+ brokenFolder.getAbsolutePath());
+				System.out.println("-------------------------------------");
+				System.exit(1);
+			}
+			ods_linkchecker.checkLink(metadataFolder, "linkchecker", "log",
+					username, password, brokenFolder);
+		} else if (args.length == 2) {
+			metadataFolder = new File(args[0]);
+			brokenFolder = new File(args[1]);
+			if (!metadataFolder.exists()) {
+				System.out.println("-------------------------------------");
+				System.out.println("Error! the folder does not exist-->"
+						+ metadataFolder.getAbsolutePath());
+				System.out.println("-------------------------------------");
+				System.exit(1);
+			}
+			if (!brokenFolder.exists()) {
+				System.out.println("-------------------------------------");
+				System.out.println("Error! the folder does not exist--->"
+						+ brokenFolder.getAbsolutePath());
+				System.out.println("-------------------------------------");
+				System.exit(1);
+			}
+			ods_linkchecker.checkLink(metadataFolder, brokenFolder);
+		} else {
+			System.err.println("Wrong number of input arguments...");
+			System.err
+					.println("For DB log creation arguments can be: metadataFolder--username--password--brokenFolder");
+			System.err
+					.println("For FS log creation arguments can be: metadataFolder--brokenFolder");
 		}
-		if (!brokenFolder.exists()) {
-			System.out.println("-------------------------------------");
-			System.out.println("Error! the folder does not exist--->"
-					+ brokenFolder.getAbsolutePath());
-			System.out.println("-------------------------------------");
-			System.exit(1);
-		}
-		ods_linkchecker.checkLink(metadataFolder, "linkchecker", "log",
-				username, password, brokenFolder);
+
 	}
 }
