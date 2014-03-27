@@ -1,5 +1,6 @@
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 
 import org.slf4j.Logger;
@@ -83,7 +84,7 @@ public class WorkerDB implements Runnable {
 				File newFile = new File(brokenFolder.getPath(),
 						inputFile.getName());
 
-				Files.move(inputFile.toPath(), newFile.toPath());
+				Files.move(inputFile.toPath(), newFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
 				System.out.println("File=" + inputFile.toPath()
 						+ " was moved to" + brokenFolder);
 				// ----------------------------------------------------------------------
@@ -117,7 +118,7 @@ public class WorkerDB implements Runnable {
 					// File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
 					File newFile = new File(brokenFolder.getPath(),
 							inputFile.getName());
-					Files.move(inputFile.toPath(), newFile.toPath());
+					Files.move(inputFile.toPath(), newFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
 					System.out.println("File=" + inputFile.toPath()
 							+ " was moved to" + brokenFolder);
 					logString.append(" " + "DeadLink");
