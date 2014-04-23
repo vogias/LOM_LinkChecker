@@ -82,7 +82,7 @@ public class lom_linkchecker {
 
 			String protocol = url.getProtocol();
 			// System.out.println(url);
-			if (!protocol.equals("http")) {
+			if (!protocol.equals("http")|| !protocol.equals("https")) {
 				// HttpsURLConnection hc =
 				// (HttpsURLConnection)url.openConnection();
 				// hc.setConnectTimeout(5000);
