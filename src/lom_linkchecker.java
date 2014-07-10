@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,35 +38,35 @@ public class lom_linkchecker {
 	private int liveLinks = 0;
 	private int recordsNumber = 0;
 
-	// ------------ Get Connection from MySQL --------------------------
-	private static Connection Get_Connection(String databaseName,
-			String userName, String passWord) throws Exception {
-		try {
-
-			System.out.println("Connecting to a selected database...");
-			// Name of database
-			String connectionURL = "jdbc:mysql://localhost:3306/"
-					+ databaseName;
-			Connection connection = null;
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
-
-			// Connection username and password
-			connection = DriverManager.getConnection(connectionURL, userName,
-					passWord);
-			System.out.println("Connected database successfully...");
-			return connection;
-		} catch (SQLException e) {
-			System.out.println("Can not connect to the database!");
-			System.out
-					.println("Please be sure that you've created the database, the username and password are correct, and you are using mysql DB");
-			System.exit(1);
-			throw e;
-		} catch (Exception e) {
-			System.out.println("Connection problem...");
-			System.exit(1);
-			throw e;
-		}
-	}
+	// // ------------ Get Connection from MySQL --------------------------
+	// private static Connection Get_Connection(String databaseName,
+	// String userName, String passWord) throws Exception {
+	// try {
+	//
+	// System.out.println("Connecting to a selected database...");
+	// // Name of database
+	// String connectionURL = "jdbc:mysql://localhost:3306/"
+	// + databaseName;
+	// Connection connection = null;
+	// Class.forName("com.mysql.jdbc.Driver").newInstance();
+	//
+	// // Connection username and password
+	// connection = DriverManager.getConnection(connectionURL, userName,
+	// passWord);
+	// System.out.println("Connected database successfully...");
+	// return connection;
+	// } catch (SQLException e) {
+	// System.out.println("Can not connect to the database!");
+	// System.out
+	// .println("Please be sure that you've created the database, the username and password are correct, and you are using mysql DB");
+	// System.exit(1);
+	// throw e;
+	// } catch (Exception e) {
+	// System.out.println("Connection problem...");
+	// System.exit(1);
+	// throw e;
+	// }
+	// }
 
 	// ------------ Check availability of each URL --------------------------
 	public int URLChecker(String link) {
@@ -224,110 +223,71 @@ public class lom_linkchecker {
 		return liveLinks;
 	}
 
-	void checkLink(File folder, String dbName, String tbName, String userName,
-			String passWord, File brokenFolder) {
-		File[] listOfFiles;
-
-		int fileNumber = 0;
-
-		Connection conn = null;
-
-		Properties props = new Properties();
-		int threadPoolSize = 1;
-
-		try {
-			props.load(new FileInputStream("configure.properties"));
-			threadPoolSize = Integer.parseInt(props
-					.getProperty(Constants.threadPoolSize));
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			System.exit(-1);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			System.exit(-1);
-		} catch (ClassCastException e) {
-			// TODO: handle exception
-			System.err.println("Wrong thread pool size value...");
-			System.exit(-1);
-		}
-
-		try {
-			conn = Get_Connection(dbName, userName, passWord);
-		} catch (SQLException se) {
-			se.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		FilenameFilter filter = new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".xml") || name.endsWith(".XML");
-			}
-		};
-
-		try {
-			listOfFiles = folder.listFiles(filter);
-			fileNumber = listOfFiles.length;
-			if (fileNumber == 0) {
-				System.out.println("No XML files found in the selected folder");
-				try {
-					if (conn != null)
-						conn.close();
-				} catch (SQLException se) {
-					// Handle errors for JDBC
-					se.printStackTrace();
-				}
-				System.exit(1);
-			}
-
-			System.out.println("processing " + fileNumber + " files ...");
-			String provider = folder.getName();
-
-			int availableProcessors = Runtime.getRuntime()
-					.availableProcessors();
-			System.out.println("Available cores:" + availableProcessors);
-			System.out.println("Thread Pool size:" + threadPoolSize);
-			ExecutorService executor = Executors
-					.newFixedThreadPool(threadPoolSize);
-
-			long start = System.currentTimeMillis();
-			for (int i = 0; i < fileNumber; i++) {
-
-				WorkerDB worker = new WorkerDB(provider, listOfFiles[i], this,
-						conn, tbName, brokenFolder, slf4jLogger);
-				executor.execute(worker);
-
-			}
-			executor.shutdown();
-
-			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-			long end = System.currentTimeMillis();
-			long diff = end - start;
-			System.out.println("Duration:" + diff + "ms");
-			try {
-				if (conn != null)
-					conn.close();
-			} catch (SQLException se) {
-				// Handle errors for JDBC
-				se.printStackTrace();
-			}
-			System.out
-					.println(" --------------------Finsished! -----------------------------");
-			System.out.println(" Total number of checked records="
-					+ getRecordsNumber());
-			System.out.println(" Number of broken links=" + getDeadLinks());
-			System.out.println(" Number of not well-formed="
-					+ getNotWellFormed());
-			System.out
-					.println(" ------------------------------------------------------------");
-
-		} catch (Exception NotFolder) {
-			System.out.println("Un-expected Error ");
-			// throw NotFolder;
-		}
-	}
+	/*
+	 * void checkLink(File folder, String dbName, String tbName, String
+	 * userName, String passWord, File brokenFolder) { File[] listOfFiles;
+	 * 
+	 * int fileNumber = 0;
+	 * 
+	 * // Connection conn = null;
+	 * 
+	 * Properties props = new Properties(); int threadPoolSize = 1;
+	 * 
+	 * try { props.load(new FileInputStream("configure.properties"));
+	 * threadPoolSize = Integer.parseInt(props
+	 * .getProperty(Constants.threadPoolSize)); } catch (FileNotFoundException
+	 * e1) { // TODO Auto-generated catch block e1.printStackTrace();
+	 * System.exit(-1); } catch (IOException e1) { // TODO Auto-generated catch
+	 * block e1.printStackTrace(); System.exit(-1); } catch (ClassCastException
+	 * e) { // TODO: handle exception
+	 * System.err.println("Wrong thread pool size value..."); System.exit(-1); }
+	 * 
+	 * // try { // conn = Get_Connection(dbName, userName, passWord); // } catch
+	 * (SQLException se) { // se.printStackTrace(); // } catch (Exception e) {
+	 * // e.printStackTrace(); // }
+	 * 
+	 * FilenameFilter filter = new FilenameFilter() { public boolean accept(File
+	 * dir, String name) { return name.endsWith(".xml") ||
+	 * name.endsWith(".XML"); } };
+	 * 
+	 * try { listOfFiles = folder.listFiles(filter); fileNumber =
+	 * listOfFiles.length; if (fileNumber == 0) {
+	 * System.out.println("No XML files found in the selected folder"); try { if
+	 * (conn != null) conn.close(); } catch (SQLException se) { // Handle errors
+	 * for JDBC se.printStackTrace(); } System.exit(1); }
+	 * 
+	 * System.out.println("processing " + fileNumber + " files ..."); String
+	 * provider = folder.getName();
+	 * 
+	 * int availableProcessors = Runtime.getRuntime() .availableProcessors();
+	 * System.out.println("Available cores:" + availableProcessors);
+	 * System.out.println("Thread Pool size:" + threadPoolSize); ExecutorService
+	 * executor = Executors .newFixedThreadPool(threadPoolSize);
+	 * 
+	 * long start = System.currentTimeMillis(); for (int i = 0; i < fileNumber;
+	 * i++) {
+	 * 
+	 * WorkerDB worker = new WorkerDB(provider, listOfFiles[i], this, conn,
+	 * tbName, brokenFolder, slf4jLogger); executor.execute(worker);
+	 * 
+	 * } executor.shutdown();
+	 * 
+	 * executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); long end
+	 * = System.currentTimeMillis(); long diff = end - start;
+	 * System.out.println("Duration:" + diff + "ms"); try { if (conn != null)
+	 * conn.close(); } catch (SQLException se) { // Handle errors for JDBC
+	 * se.printStackTrace(); } System.out
+	 * .println(" --------------------Finsished! -----------------------------"
+	 * ); System.out.println(" Total number of checked records=" +
+	 * getRecordsNumber()); System.out.println(" Number of broken links=" +
+	 * getDeadLinks()); System.out.println(" Number of not well-formed=" +
+	 * getNotWellFormed()); System.out
+	 * .println(" ------------------------------------------------------------"
+	 * );
+	 * 
+	 * } catch (Exception NotFolder) { System.out.println("Un-expected Error ");
+	 * // throw NotFolder; } }
+	 */
 
 	void checkLink(File folder, File brokenFolder) {
 		File[] listOfFiles;
@@ -423,32 +383,34 @@ public class lom_linkchecker {
 		lom_linkchecker ods_linkchecker = new lom_linkchecker();
 
 		File metadataFolder;
-		String username;
-		String password;
+		// String username;
+		// String password;
 		File brokenFolder;
 
-		if (args.length == 4) {
-			metadataFolder = new File(args[0]);
-			username = args[1];
-			password = args[2];
-			brokenFolder = new File(args[3]);
-			if (!metadataFolder.exists()) {
-				System.out.println("-------------------------------------");
-				System.out.println("Error! the folder does not exist-->"
-						+ metadataFolder.getAbsolutePath());
-				System.out.println("-------------------------------------");
-				System.exit(1);
-			}
-			if (!brokenFolder.exists()) {
-				System.out.println("-------------------------------------");
-				System.out.println("Error! the folder does not exist--->"
-						+ brokenFolder.getAbsolutePath());
-				System.out.println("-------------------------------------");
-				System.exit(1);
-			}
-			ods_linkchecker.checkLink(metadataFolder, "linkchecker", "log",
-					username, password, brokenFolder);
-		} else if (args.length == 2) {
+		// if (args.length == 4) {
+		// metadataFolder = new File(args[0]);
+		// username = args[1];
+		// password = args[2];
+		// brokenFolder = new File(args[3]);
+		// if (!metadataFolder.exists()) {
+		// System.out.println("-------------------------------------");
+		// System.out.println("Error! the folder does not exist-->"
+		// + metadataFolder.getAbsolutePath());
+		// System.out.println("-------------------------------------");
+		// System.exit(1);
+		// }
+		// if (!brokenFolder.exists()) {
+		// System.out.println("-------------------------------------");
+		// System.out.println("Error! the folder does not exist--->"
+		// + brokenFolder.getAbsolutePath());
+		// System.out.println("-------------------------------------");
+		// System.exit(1);
+		// }
+		// ods_linkchecker.checkLink(metadataFolder, "linkchecker", "log",
+		// username, password, brokenFolder);
+		// } else 
+			
+			if (args.length == 2) {
 			metadataFolder = new File(args[0]);
 			brokenFolder = new File(args[1]);
 			if (!metadataFolder.exists()) {
