@@ -1,9 +1,13 @@
 import java.io.File;
-import java.nio.file.CopyOption;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 import org.slf4j.Logger;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * 
@@ -22,16 +26,20 @@ public class WorkerFS implements Runnable {
 	File brokenFolder;
 	Logger slf4jLogger;
 	String code = "null";
+	String queue;
+	ConnectionFactory factory;
 
 	public WorkerFS(String provider, File inputFile,
 			lom_linkchecker ods_linkchecker, File brokenFolder,
-			Logger slf4jLogger) {
+			Logger slf4jLogger, ConnectionFactory factory, String queueName) {
 		// TODO Auto-generated constructor stub
 		this.provider = provider;
 		this.inputFile = inputFile;
 		this.ods_linkchecker = ods_linkchecker;
 		this.brokenFolder = brokenFolder;
 		this.slf4jLogger = slf4jLogger;
+		this.queue = queueName;
+		this.factory = factory;
 	}
 
 	@Override
@@ -84,9 +92,9 @@ public class WorkerFS implements Runnable {
 				File newFile = new File(brokenFolder.getPath(),
 						inputFile.getName());
 
-				Files.move(inputFile.toPath(), newFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
-				
-				
+				Files.move(inputFile.toPath(), newFile.toPath(),
+						StandardCopyOption.REPLACE_EXISTING);
+
 				System.out.println("File=" + inputFile.toPath()
 						+ " was moved to" + brokenFolder);
 				// ----------------------------------------------------------------------
@@ -122,7 +130,8 @@ public class WorkerFS implements Runnable {
 					// File(brokenFolder.toPath()+"\\"+listOfFiles[i].getName());
 					File newFile = new File(brokenFolder.getPath(),
 							inputFile.getName());
-					Files.move(inputFile.toPath(), newFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
+					Files.move(inputFile.toPath(), newFile.toPath(),
+							StandardCopyOption.REPLACE_EXISTING);
 					System.out.println("File=" + inputFile.toPath()
 							+ " was moved to" + brokenFolder);
 					logString.append(" " + "DeadLink");
@@ -156,6 +165,27 @@ public class WorkerFS implements Runnable {
 		ods_linkchecker.raiseRecordsNumber();
 
 		slf4jLogger.info(logString.toString());
+
+		try {
+			Connection connection = this.factory.newConnection();
+			Channel channel = connection.createChannel();
+			channel.queueDeclare(this.queue, false, false, false, null);
+
+			channel.basicPublish("", this.queue, null, logString.toString()
+					.getBytes());
+
+			System.out.println(" Sent '" + logString.toString()
+					+ "' to message queue server at:"
+					+ connection.getAddress().getHostAddress());
+
+			channel.close();
+			connection.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 }

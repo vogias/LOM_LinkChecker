@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -24,6 +23,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.rabbitmq.client.ConnectionFactory;
+
 /**
  * Created with IntelliJ IDEA. User: Enayat Rajabi (university of ALcala de
  * Henares) Date: 7/31/13 Time: 11:02 AM To change this template use File |
@@ -33,6 +34,7 @@ public class lom_linkchecker {
 
 	private static final Logger slf4jLogger = LoggerFactory
 			.getLogger(lom_linkchecker.class);
+	private final static String QUEUE_NAME = "link_checking";
 	private int deadLinks = 0;
 	private int notWellFormed = 0;
 	private int liveLinks = 0;
@@ -341,10 +343,16 @@ public class lom_linkchecker {
 					.newFixedThreadPool(threadPoolSize);
 
 			long start = System.currentTimeMillis();
+
+			ConnectionFactory factory = new ConnectionFactory();
+			factory.setHost(props.getProperty(Constants.queueHost));
+			factory.setUsername(props.getProperty(Constants.queueUser));
+			factory.setPassword(props.getProperty(Constants.queuePass));
+
 			for (int i = 0; i < fileNumber; i++) {
 
 				WorkerFS worker = new WorkerFS(provider, listOfFiles[i], this,
-						brokenFolder, slf4jLogger);
+						brokenFolder, slf4jLogger, factory, QUEUE_NAME);
 				executor.execute(worker);
 
 			}
@@ -408,9 +416,9 @@ public class lom_linkchecker {
 		// }
 		// ods_linkchecker.checkLink(metadataFolder, "linkchecker", "log",
 		// username, password, brokenFolder);
-		// } else 
-			
-			if (args.length == 2) {
+		// } else
+
+		if (args.length == 2) {
 			metadataFolder = new File(args[0]);
 			brokenFolder = new File(args[1]);
 			if (!metadataFolder.exists()) {
