@@ -74,7 +74,7 @@ public class lom_linkchecker {
 	// ------------ Check availability of each URL --------------------------
 	public int URLChecker(String link) {
 
-		HttpsURLConnection urlconn = null;
+		HttpURLConnection urlconn = null;
 
 		// int res = -1;
 		// String msg = null;
@@ -94,7 +94,7 @@ public class lom_linkchecker {
 				return -2;
 			}
 
-			urlconn = (HttpsURLConnection) url.openConnection();
+			urlconn = (HttpURLConnection) url.openConnection();
 			urlconn.setConnectTimeout(10000);
 			urlconn.setReadTimeout(10000);
 			urlconn.setRequestMethod("GET");
