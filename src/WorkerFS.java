@@ -107,6 +107,8 @@ public class WorkerFS implements Runnable {
 			System.out.println("Found URL=" + metadataURL);
 
 			int result = ods_linkchecker.URLChecker(metadataURL);
+
+			System.out.println("The result is:" + result);
 			if (result != 200) {
 				try {
 					System.out.println("--------------------File #("

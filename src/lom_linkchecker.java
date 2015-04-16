@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -73,7 +74,7 @@ public class lom_linkchecker {
 	// ------------ Check availability of each URL --------------------------
 	public int URLChecker(String link) {
 
-		HttpURLConnection urlconn = null;
+		HttpsURLConnection urlconn = null;
 
 		// int res = -1;
 		// String msg = null;
@@ -93,13 +94,14 @@ public class lom_linkchecker {
 				return -2;
 			}
 
-			urlconn = (HttpURLConnection) url.openConnection();
+			urlconn = (HttpsURLConnection) url.openConnection();
 			urlconn.setConnectTimeout(10000);
 			urlconn.setReadTimeout(10000);
 			urlconn.setRequestMethod("GET");
 
 			urlconn.connect();
 			String redirlink = urlconn.getHeaderField("Location");
+
 			// System.out.println(urlconn.getHeaderFields());
 
 			if (redirlink != null && !url.toExternalForm().equals(redirlink)) {
