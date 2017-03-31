@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -24,8 +23,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.rabbitmq.client.ConnectionFactory;
-
 /**
  * Created with IntelliJ IDEA. User: Enayat Rajabi (university of ALcala de
  * Henares) Date: 7/31/13 Time: 11:02 AM To change this template use File |
@@ -33,8 +30,7 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 public class lom_linkchecker {
 
-	private static final Logger slf4jLogger = LoggerFactory
-			.getLogger(lom_linkchecker.class);
+	private static final Logger slf4jLogger = LoggerFactory.getLogger(lom_linkchecker.class);
 	private final static String QUEUE_NAME = "link_checking";
 	private int deadLinks = 0;
 	private int notWellFormed = 0;
@@ -61,7 +57,8 @@ public class lom_linkchecker {
 	// } catch (SQLException e) {
 	// System.out.println("Can not connect to the database!");
 	// System.out
-	// .println("Please be sure that you've created the database, the username and password are correct, and you are using mysql DB");
+	// .println("Please be sure that you've created the database, the username
+	// and password are correct, and you are using mysql DB");
 	// System.exit(1);
 	// throw e;
 	// } catch (Exception e) {
@@ -158,10 +155,8 @@ public class lom_linkchecker {
 								// System.out.println("Identifier====="+e.getElementsByTagName("dc:identifier").item(0).getTextContent()+"===========");
 								try {
 									// Link element= identifier. entry
-									NodeList nodeList = e
-											.getElementsByTagName(element);
-									urlCheck = nodeList.item(0).getChildNodes()
-											.item(0).getNodeValue();
+									NodeList nodeList = e.getElementsByTagName(element);
+									urlCheck = nodeList.item(0).getChildNodes().item(0).getNodeValue();
 								} catch (Exception ee) {
 									urlCheck = "Error";
 								}
@@ -182,15 +177,13 @@ public class lom_linkchecker {
 
 	// ------------ INSERT RECORD INTO LOG TABLE (URL, Dead or Live?, the
 	// filename, connection name) --------------------------
-	public synchronized void insertRecord(String URL, String Result,
-			String FileName, Connection conn, String tbName) {
+	public synchronized void insertRecord(String URL, String Result, String FileName, Connection conn, String tbName) {
 		Statement stmt = null;
 		FileName = FileName.replace('\\', '/');
 		try {
 			stmt = conn.createStatement();
-			String sql = "INSERT INTO " + tbName + " (URL,Result,FileName)"
-					+ "VALUES ('" + URL + "','" + Result + "','" + FileName
-					+ "');";
+			String sql = "INSERT INTO " + tbName + " (URL,Result,FileName)" + "VALUES ('" + URL + "','" + Result + "','"
+					+ FileName + "');";
 			System.out.print(sql);
 			stmt.executeUpdate(sql);
 		} catch (SQLException se) {
@@ -200,7 +193,7 @@ public class lom_linkchecker {
 			// Handle errors for Class.forName
 			e.printStackTrace();
 		} finally {
-		}// end try
+		} // end try
 	}
 
 	public synchronized void raiseNotWellFormed() {
@@ -303,8 +296,7 @@ public class lom_linkchecker {
 
 		try {
 			props.load(new FileInputStream("configure.properties"));
-			threadPoolSize = Integer.parseInt(props
-					.getProperty(Constants.threadPoolSize));
+			threadPoolSize = Integer.parseInt(props.getProperty(Constants.threadPoolSize));
 		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -337,24 +329,16 @@ public class lom_linkchecker {
 			System.out.println("processing " + fileNumber + " files ...");
 			String provider = folder.getName();
 
-			int availableProcessors = Runtime.getRuntime()
-					.availableProcessors();
+			int availableProcessors = Runtime.getRuntime().availableProcessors();
 			System.out.println("Available cores:" + availableProcessors);
 			System.out.println("Thread Pool size:" + threadPoolSize);
-			ExecutorService executor = Executors
-					.newFixedThreadPool(threadPoolSize);
+			ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
 
 			long start = System.currentTimeMillis();
 
-			ConnectionFactory factory = new ConnectionFactory();
-			factory.setHost(props.getProperty(Constants.queueHost));
-			factory.setUsername(props.getProperty(Constants.queueUser));
-			factory.setPassword(props.getProperty(Constants.queuePass));
-
 			for (int i = 0; i < fileNumber; i++) {
 
-				WorkerFS worker = new WorkerFS(provider, listOfFiles[i], this,
-						brokenFolder, slf4jLogger, factory, QUEUE_NAME);
+				WorkerFS worker = new WorkerFS(provider, listOfFiles[i], this, brokenFolder, slf4jLogger, QUEUE_NAME);
 				executor.execute(worker);
 
 			}
@@ -364,16 +348,12 @@ public class lom_linkchecker {
 			long end = System.currentTimeMillis();
 			long diff = end - start;
 
-			System.out
-					.println(" --------------------Finsished! -----------------------------");
+			System.out.println(" --------------------Finsished! -----------------------------");
 			System.out.println(" Duration:" + diff + "ms");
-			System.out.println(" Total number of checked records="
-					+ getRecordsNumber());
+			System.out.println(" Total number of checked records=" + getRecordsNumber());
 			System.out.println(" Number of broken links=" + getDeadLinks());
-			System.out.println(" Number of not well-formed="
-					+ getNotWellFormed());
-			System.out
-					.println(" ------------------------------------------------------------");
+			System.out.println(" Number of not well-formed=" + getNotWellFormed());
+			System.out.println(" ------------------------------------------------------------");
 
 		} catch (Exception NotFolder) {
 			System.out.println("Un-expected Error ");
@@ -425,15 +405,13 @@ public class lom_linkchecker {
 			brokenFolder = new File(args[1]);
 			if (!metadataFolder.exists()) {
 				System.out.println("-------------------------------------");
-				System.out.println("Error! the folder does not exist-->"
-						+ metadataFolder.getAbsolutePath());
+				System.out.println("Error! the folder does not exist-->" + metadataFolder.getAbsolutePath());
 				System.out.println("-------------------------------------");
 				System.exit(1);
 			}
 			if (!brokenFolder.exists()) {
 				System.out.println("-------------------------------------");
-				System.out.println("Error! the folder does not exist--->"
-						+ brokenFolder.getAbsolutePath());
+				System.out.println("Error! the folder does not exist--->" + brokenFolder.getAbsolutePath());
 				System.out.println("-------------------------------------");
 				System.exit(1);
 			}
@@ -442,8 +420,7 @@ public class lom_linkchecker {
 			System.err.println("Wrong number of input arguments...");
 			System.err
 					.println("For DB log creation arguments can be: metadataFolder--username--password--brokenFolder");
-			System.err
-					.println("For FS log creation arguments can be: metadataFolder--brokenFolder");
+			System.err.println("For FS log creation arguments can be: metadataFolder--brokenFolder");
 		}
 
 	}
